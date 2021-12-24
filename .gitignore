@@ -1,2 +1,3 @@
 .clasp.json
-const.js
+00_const.js
+test.js

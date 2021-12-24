@@ -1,11 +1,13 @@
+let calendar;
+
 function main() {
-  initCalendar(CALENDAR_ID);
   Object.keys(channelDataTable).forEach((channelId) => {
-    registerCalenderEventfromYTStream(channelId);
+    initCalendar(channelId);
+    registerCalendarEventfromYTStream(channelId);
   })
 }
 
-function registerCalenderEventfromYTStream(channelId){
+function registerCalendarEventfromYTStream(channelId) {
   let ytEvents = [];
   ytEvents = getYtEvents(channelId);
 
@@ -17,38 +19,48 @@ function registerCalenderEventfromYTStream(channelId){
 
     calendarEvents = getDupulicateEvents(event.id.videoId);
 
-    var date = new Date(liveEvent.liveStreamingDetails.scheduledStartTime);
+    var date = new Date();
+    if ("liveStreamingDetails" in liveEvent) {
+      date = new Date(liveEvent.liveStreamingDetails.scheduledStartTime);
+    } else {
+      date = new Date(event.snippet.publishTime)
+    }
     const startDate = new Date(date);
     const endDate = new Date(date.setHours(date.getHours() + 1));
 
-    if (calendarEvents.length) {
-      // when dupulicate a video event, update the calendar event;
+    calendarEvents.forEach((calendarEvent) => {
+      calendarEvent.deleteEvent();
+    })
 
-    } else {
-      // else, create new calendar event
-      var calendarEvent = calendar.createEvent(event.snippet.title,
-        startDate,
-        endDate,
-        {
-          location: channelDataTable[channelId].name + '：https://youtu.be/' + event.id.videoId,
+    // else, create new calendar event
+    const title = event.snippet.title;
+    var calendarEvent = calendar.createEvent(
+      title,
+      startDate,
+      endDate,
+      {
+        location: 'https://youtu.be/' + event.id.videoId,
+      });
+    Logger.log('Event: ' + calendarEvent.getId());
 
-        });
-      Logger.log('Event: ' + calendarEvent.getId());
-
-      // change event color
-      console.log('channelId', channelId)
-      console.log('tableItem', channelDataTable[channelId])
-      calendarEvent.setColor( channelDataTable[channelId].color )
-    }
+    // change event color
+    console.log('channelId', channelId)
+    console.log('tableItem', channelDataTable[channelId])
+    calendarEvent.setColor( channelDataTable[channelId].eventColor )
   })
 }
 
 /**
  * initialize google calendar by id
  */
-function initCalendar(calendarId) {
-  calendar = CalendarApp.getCalendarById(calendarId);
+function initCalendar(channelId) {
+  calendar = CalendarApp.getCalendarById(channelDataTable[channelId].calendarId);
   console.log('calendar:', calendar);
+
+  // set calendar color
+  if (channelDataTable[channelId].calColor !== null) {
+    calendar.setColor(channelDataTable[channelId].calColor)
+  }
 }
 
 /**
@@ -83,9 +95,9 @@ function getDupulicateEvents(videoId = "") {
     return
   }
 
-  const now = new Date();
-  const startDate = new Date(now.setDate(now.getDate() - 1));
-  const endDate = new Date();
+  const date = new Date();
+  const startDate = new Date(date.setFullYear(date.getFullYear() - 1));
+  const endDate = new Date(date.setFullYear(date.getFullYear() + 2));
   console.log(startDate, endDate)
   const opt = { search: videoId }
   rst = calendar.getEvents(startDate, endDate, opt)
