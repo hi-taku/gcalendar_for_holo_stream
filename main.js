@@ -33,7 +33,7 @@ function registerCalendarEventfromYTStream(channelId) {
     })
 
     // else, create new calendar event
-    const title = event.snippet.title;
+    const title = event.snippet.title + "：" + event.id.videoId;
     var calendarEvent = calendar.createEvent(
       title,
       startDate,
